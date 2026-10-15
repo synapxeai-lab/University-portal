@@ -30,15 +30,14 @@ function Toast({ msg, type, onClose }) {
   if (!msg) return null;
   const isErr = type === 'error';
   return createPortal(
-    <div style={{
-      position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 9999,
+    <div className="toast" style={{
       display: 'flex', alignItems: 'center', gap: '0.6rem',
       background: isErr ? '#fff1f2' : '#f0fdf4',
       border: `1px solid ${isErr ? '#fecdd3' : '#bbf7d0'}`,
       color: isErr ? '#be123c' : '#15803d',
       padding: '0.75rem 1.1rem', borderRadius: 10,
       boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-      fontSize: '0.87rem', fontWeight: 600, maxWidth: 340,
+      fontSize: '0.87rem', fontWeight: 600,
       animation: 'fadeIn 0.2s ease',
     }}>
       {isErr ? <LuTriangleAlert size={17} /> : <LuCircleCheck size={17} />}
@@ -465,7 +464,7 @@ export default function UsersPage() {
           </div>
         ) : (
           <div className="table-scroll">
-            <table className="users-table">
+            <table className="users-table users-list-table">
               <thead>
                 <tr>
                   <th>#</th>

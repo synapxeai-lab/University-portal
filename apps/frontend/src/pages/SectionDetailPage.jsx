@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  LuArrowLeft, LuUser, LuUserCheck, LuPhone, LuMail, LuHash, LuX, LuPlus, LuTrash2, LuLoaderCircle,
+  LuArrowLeft, LuUser, LuUserCheck, LuPhone, LuMail, LuHash, LuX, LuTrash2, LuLoaderCircle,
 } from 'react-icons/lu';
 import { useAuth } from '../context/AuthContext.jsx';
 import DashboardLayout from '../components/DashboardLayout.jsx';
@@ -112,111 +112,6 @@ function AssignTeacherModal({ courseName, onClose, onAssigned }) {
   );
 }
 
-function AddStudentModal({ batch, excludeIds, onClose, onAdded }) {
-  const [students, setStudents] = useState([]);
-  const [loadingStudents, setLoadingStudents] = useState(true);
-  const [fetchError, setFetchError] = useState('');
-  const [studentId, setStudentId] = useState('');
-  const [query, setQuery] = useState('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await api.get('/students');
-        if (!cancelled) setStudents(data.students);
-      } catch (err) {
-        if (!cancelled) setFetchError(err.message || 'Failed to load students.');
-      } finally {
-        if (!cancelled) setLoadingStudents(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const available = students.filter(s => s.batch === batch && !excludeIds.includes(s.id));
-  const filtered = available.filter(s => {
-    const q = query.trim().toLowerCase();
-    return s.name.toLowerCase().includes(q) || s.rollNo.toLowerCase().includes(q);
-  });
-
-  const selectStudent = (s) => {
-    setStudentId(s.id);
-    setQuery(`${s.name} (${s.rollNo})`);
-    setDropdownOpen(false);
-    setError('');
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!studentId) { setError(query.trim() ? 'Select a student from the list' : 'Student is required'); return; }
-    setSaving(true);
-    try {
-      await onAdded(studentId);
-    } catch (err) {
-      setError(err.message || 'Failed to add student.');
-    } finally { setSaving(false); }
-  };
-
-  return createPortal(
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">Add Student to Section</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close"><LuX size={15} /></button>
-        </div>
-
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="form-group" style={{ position: 'relative' }}>
-            <label className="form-label">Student <span style={{ color: '#b91c1c' }}>*</span></label>
-            {loadingStudents ? (
-              <p className="field-hint">Loading students…</p>
-            ) : fetchError ? (
-              <p className="field-error">{fetchError}</p>
-            ) : available.length === 0 ? (
-              <p className="field-hint">No students from Batch {batch} are available to add (either none exist, or they're all already enrolled).</p>
-            ) : (
-              <>
-                <input
-                  className={`form-input${error ? ' input-error' : ''}`}
-                  type="text" value={query} placeholder="Type to search students…" autoComplete="off"
-                  onChange={e => { setQuery(e.target.value); setStudentId(''); setDropdownOpen(true); setError(''); }}
-                  onFocus={() => setDropdownOpen(true)}
-                  onBlur={() => setTimeout(() => setDropdownOpen(false), 120)}
-                />
-                {dropdownOpen && (
-                  <div className="teacher-suggest-list">
-                    {filtered.length > 0 ? filtered.map(s => (
-                      <button type="button" key={s.id} className="teacher-suggest-item" onMouseDown={() => selectStudent(s)}>
-                        <span className="teacher-suggest-name">{s.name}</span>
-                        <span className="teacher-suggest-email">{s.rollNo} — {s.email}</span>
-                      </button>
-                    )) : (
-                      <p className="teacher-suggest-empty">No students match "{query}"</p>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-            {error && <p className="field-error">{error}</p>}
-          </div>
-
-          <div className="modal-actions">
-            <button type="button" className="btn-outline" onClick={onClose} disabled={saving}>Cancel</button>
-            <button type="submit" className="btn-primary" disabled={available.length === 0 || saving}>
-              {saving ? 'Adding…' : 'Add'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
-    document.body
-  );
-}
-
 export default function SectionDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -227,7 +122,6 @@ export default function SectionDetailPage() {
   const [section, setSection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showAddStudent, setShowAddStudent] = useState(false);
   const [assignCourseLink, setAssignCourseLink] = useState(null); // { courseId, courseName }
   const [deleteSectionConfirm, setDeleteSectionConfirm] = useState(false);
   const [toast, setToast] = useState({ msg: '', type: 'success' });
@@ -246,13 +140,6 @@ export default function SectionDetailPage() {
   }, [id]);
 
   useEffect(() => { setLoading(true); setError(''); fetchSection(); }, [fetchSection]);
-
-  const handleAddStudent = async (studentId) => {
-    const res = await api.post(`/sections/${id}/students`, { studentId: Number(studentId) });
-    setSection(res.section);
-    setShowAddStudent(false);
-    showToast('Student added to section.');
-  };
 
   const handleRemoveStudent = async (studentId) => {
     try {
@@ -309,14 +196,6 @@ export default function SectionDetailPage() {
   return (
     <DashboardLayout pageTitle={`Section ${section.label}`}>
       <Toast msg={toast.msg} type={toast.type} onClose={hideToast} />
-      {showAddStudent && (
-        <AddStudentModal
-          batch={section.batch}
-          excludeIds={students.map(s => s.id)}
-          onClose={() => setShowAddStudent(false)}
-          onAdded={handleAddStudent}
-        />
-      )}
       {assignCourseLink && (
         <AssignTeacherModal
           courseName={assignCourseLink.courseName}
@@ -395,14 +274,7 @@ export default function SectionDetailPage() {
         ))}
       </div>
 
-      <div className="page-header">
-        <h3 className="semester-heading" style={{ marginBottom: 0 }}>Enrolled Students</h3>
-        {isAdmin && (
-          <button className="btn-primary btn-with-icon" onClick={() => setShowAddStudent(true)} style={{ flexShrink: 0 }}>
-            <LuPlus size={16} /> Add Student
-          </button>
-        )}
-      </div>
+      <h3 className="semester-heading" style={{ marginBottom: '0.9rem' }}>Enrolled Students</h3>
 
       <div className="dept-list">
         {students.length === 0 ? (
