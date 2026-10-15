@@ -1,0 +1,30 @@
+{
+  "name": "attendance-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/frontend",
+    "apps/backend"
+  ],
+  "scripts": {
+    "predev": "node scripts/kill-port.js",
+    "dev": "concurrently -n backend,frontend -c blue,magenta \"npm run dev --workspace=@ams/backend\" \"npm run dev --workspace=@ams/frontend\"",
+    "dev:backend": "npm run dev --workspace=@ams/backend",
+    "dev:frontend": "npm run dev --workspace=@ams/frontend",
+    "db:push": "npm run db:push --workspace=@ams/backend",
+    "db:generate": "npm run db:generate --workspace=@ams/backend",
+    "db:migrate": "npm run db:migrate --workspace=@ams/backend",
+    "db:seed": "npm run db:seed --workspace=@ams/backend",
+    "db:studio": "npm run db:studio --workspace=@ams/backend",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "install:all": "npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prisma": "^7.8.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0"
+  }
+}
